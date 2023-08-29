@@ -41,7 +41,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace hmta
 {
 
-// This timer is based on threads as oppose to the POSIX' signal based timers.
 // F must define the operator()() which will be executed on either
 // the engine_routine thread or on a separate thread depending on the value
 // of "repeat_recursively".

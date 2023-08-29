@@ -40,25 +40,23 @@ using namespace hmta;
 
 class   MyFoot  {
 
-    public:
+public:
 
-        MyFoot (int id) : id_ (id), count_ (0)  {  }
+    MyFoot (int id) : id_ (id), count_ (0)  {  }
 
-        bool operator () ()  {
+    bool operator () ()  {
 
-            std::cout << "Printing from MyFoot (" << id_
-                      << "). count is " << count_
-                      << ". time is " << time (nullptr) << std::endl;
+        std::cout << "Printing from MyFoot (" << id_
+                  << "). count is " << count_
+                  << ". time is " << time(nullptr) << std::endl;
+        count_ += 1;
+        return (true);
+    }
 
+private:
 
-            count_ += 1;
-            return (true);
-        }
-
-    private:
-
-        int     id_;
-        size_t  count_;
+    int     id_;
+    size_t  count_;
 };
 
 // ----------------------------------------------------------------------------

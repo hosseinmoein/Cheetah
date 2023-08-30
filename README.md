@@ -48,9 +48,10 @@ public:
 
     MyFoot (int id) : id_ (id), count_ (0)  {  }
 
-    bool operator () ()  {
+    bool operator ()()  {
 
-        std::cout << "Printing from MyFoot (" << id_ << "). count is " << count_ << ". time is " << time(nullptr) << std::endl;
+        std::cout << "Printing from MyFoot (" << id_ << "). count is "
+                  << count_ << ". time is " << time(nullptr) << std::endl;
         count_ += 1;
         return (true);
     }
@@ -65,7 +66,7 @@ private:
 
 int main(int, char *[])  {
 
-    const struct ::timespec rqt = {60, 0};
+    const struct ::timespec rqt = { 60, 0 };
 
     {
         MyFoot              foot_master (10);
@@ -78,46 +79,49 @@ int main(int, char *[])  {
 
         // The Timer will be armed
         //
-        timer.arm ();
+        timer.arm();
 
-        const struct ::timespec rqt2 = {30, 0};
+        const struct ::timespec rqt2 = { 30, 0 };
 
-        nanosleep (&rqt2, nullptr);
+        nanosleep(&rqt2, nullptr);
         
         // Change the interval to 1 seconds.
         // "interval_nanosec" is set to zero by default.
         //
-        timer.set_time_interval (1);
-        nanosleep (&rqt2, nullptr);
+        timer.set_time_interval(1);
+        nanosleep(&rqt2, nullptr);
         
         // Change the interval to 10 seconds.
         // "interval_nanosec" is set to zero by default.
         //
-        timer.set_time_interval (10);
-        nanosleep (&rqt, nullptr);
+        timer.set_time_interval(10);
+        nanosleep(&rqt, nullptr);
 
-        // Repeat recursively.
-        //
         MyFoot              foot_master2 (200);
         // Construct a second timer with specifed parameters.
         //
-        TimerAlarm<MyFoot>  timer2 (foot_master2, 5, 0, TimerAlarm<MyFoot>::FOREVER_REPEATING, true);
+        TimerAlarm<MyFoot>  timer2 (foot_master2,  // Functor instance
+                                    5,  // 5 seconds intervals
+                                    0,  // 0 nano-seconds specified
+                                    TimerAlarm<MyFoot>::FOREVER_REPEATING,  // Repeat forever
+                                    true);  // Repeat recursively
 
-        timer2.arm ();  // Armed timer will execute
-        nanosleep (&rqt, nullptr);
+        timer2.arm();  // Armed timer will execute
+        nanosleep(&rqt, nullptr);
     }
 
-    std::cout << std::endl << std::endl << "main(): Got out of the enclosing block ..." << std::endl << std::endl;
+    std::cout << "\n\nmain(): Got out of the enclosing block ...\n" << std::endl;
 
-    // Go off only once.
-    //
     MyFoot             foot_master (3000);
     // Construct a third timer with specifed parameters.
     //
-    TimerAlarm<MyFoot> timer (foot_master, 5, 0, 5);
+    TimerAlarm<MyFoot> timer (foot_master,  // Functor instance
+                              5,  // 5 seconds intervals
+                              0,  // 0 nano-seconds specified
+                              5);  // Repeat 5 times
 
-    timer.arm ();  // Armed timer will execute
-    nanosleep (&rqt, nullptr);
+    timer.arm();  // Armed timer will execute
+    nanosleep(&rqt, nullptr);
     return (EXIT_SUCCESS);
 }
 ```

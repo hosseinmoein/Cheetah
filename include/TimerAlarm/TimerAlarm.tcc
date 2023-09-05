@@ -38,18 +38,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace hmta
 {
 
-template<typename F>
+template<std::invocable F>
 TimerAlarm<F>::TimerAlarm(F &functor,
                           time_type interval_sec,
                           time_type interval_nanosec,
-                          size_type repeat_count,
-                          bool repeat_recursively)
-    : is_armed_ (false),
-      repeated_sofar_ (0),
-      interval_sec_ (interval_sec),
+                          size_type repeat_count)
+    : interval_sec_ (interval_sec),
       interval_nanosec_ (interval_nanosec),
       repeat_count_ (repeat_count),
-      repeat_recursively_ (repeat_recursively),
       functor_ (functor)  {
 
     // Make sure everything is proper.
@@ -65,13 +61,15 @@ TimerAlarm<F>::TimerAlarm(F &functor,
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
+template<std::invocable F>
 TimerAlarm<F>::~TimerAlarm() noexcept  {
 
-    std::unique_lock<std::mutex>    guard { state_mutex_ };
+    bool    expected { true };
 
-    if (is_armed_)  {
-        is_armed_ = false;
+    if (is_armed_.compare_exchange_strong(expected, false,
+                                          std::memory_order_relaxed,
+                                          std::memory_order_relaxed))  {
+        std::unique_lock<std::mutex>    guard { state_mutex_ };
 
         // Let the engine_routine() know it is time to quit.
         //
@@ -85,9 +83,11 @@ TimerAlarm<F>::~TimerAlarm() noexcept  {
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
+template<std::invocable F>
 bool TimerAlarm<F>::
 set_time_interval(time_type interval_sec, time_type interval_nanosec)  {
+
+    const std::lock_guard<std::mutex>   guard { state_mutex_ };
 
     // Make sure everything is proper.
     //
@@ -96,44 +96,42 @@ set_time_interval(time_type interval_sec, time_type interval_nanosec)  {
                                   "the time interval must be greater then "
                                   "zero nano seconds.");
 
-    const std::lock_guard<std::mutex>   guard { state_mutex_ };
-
     interval_sec_ = interval_sec;
     interval_nanosec_ = interval_nanosec;
-
     return (true);
 }
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
+template<std::invocable F>
 bool TimerAlarm<F>::arm()  {
 
-    const std::lock_guard<std::mutex>   guard { state_mutex_ };
+    bool    expected { false };
 
-    if (is_armed_)
+    if (! is_armed_.compare_exchange_strong(expected, true,
+                                            std::memory_order_relaxed,
+                                            std::memory_order_relaxed))
         throw std::runtime_error { "TimerAlarm::arm(): "
                                    "The time/alarm is already armed." };
+
+    repeated_sofar_ = 0;
 
     std::thread engine_thr { &TimerAlarm::engine_routine_, this };
 
     engine_thr.detach();
-    is_armed_ = true;
-    repeated_sofar_ = 0;
-
     return (true);
 }
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
+template<std::invocable F>
 bool TimerAlarm<F>::disarm()  {
 
-    const std::lock_guard<std::mutex>   guard { state_mutex_ };
+    bool    expected { true };
 
-    if (is_armed_)  {
-        is_armed_ = false;
-
+    if (! is_armed_.compare_exchange_strong(expected, false,
+                                            std::memory_order_relaxed,
+                                            std::memory_order_relaxed))  {
         // Let the engine_routine() know it is time to quit.
         //
         engine_cv_.notify_one();
@@ -145,40 +143,32 @@ bool TimerAlarm<F>::disarm()  {
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
+template<std::invocable F>
 bool TimerAlarm<F>::engine_routine_() noexcept  {
 
     size_type   this_count { repeat_count_ };
 
     while (this_count-- > 0)  {
-        std::unique_lock<std::mutex>    guard { state_mutex_ };
-
-        if (! is_armed_)
+        if (! is_armed_.load(std::memory_order_relaxed))
             break;
 
-        const std::cv_status    signaled =
-            engine_cv_.wait_for(
-                guard,
-                std::chrono::nanoseconds(
-                    1000000000L * interval_sec_ + interval_nanosec_));
+        {
+            std::unique_lock<std::mutex>    guard { state_mutex_ };
+            const std::cv_status            signaled =
+                engine_cv_.wait_for(
+                    guard,
+                    std::chrono::nanoseconds(
+                        1000000000L * interval_sec_ + interval_nanosec_));
 
-        // If we were signaled, it was a signal to disarm. So get out
-        // of here immediately.
-        //
-        if (signaled == std::cv_status::no_timeout)
-            break;
+            // If we were signaled, it was a signal to disarm. So get out
+            // of here immediately.
+            //
+            if (signaled == std::cv_status::no_timeout)
+                break;
+		}
 
         repeated_sofar_ += 1;
-        guard.release();
-        state_mutex_.unlock();
-
-        if (repeat_recursively_)  {
-            std::thread functor_thr { &F::operator(), &functor_ };
-
-            functor_thr.detach();
-        }
-        else
-            functor_();
+        functor_();
     }
 
     // In case we just run out of repeat count, disarm.
@@ -195,12 +185,15 @@ bool TimerAlarm<F>::engine_routine_() noexcept  {
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
-bool TimerAlarm<F>::is_armed() const noexcept  { return (is_armed_); }
+template<std::invocable F>
+bool TimerAlarm<F>::is_armed() const noexcept  {
+
+    return (is_armed_.load(std::memory_order_relaxed));
+}
 
 // ----------------------------------------------------------------------------
 
-template<typename F>
+template<std::invocable F>
 typename TimerAlarm<F>::size_type TimerAlarm<F>::
 current_repeat_count() const noexcept  { return (repeated_sofar_); }
 

@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <TimerAlarm/TimerAlarm.h>
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -46,6 +47,9 @@ public:
 
     bool operator () ()  {
 
+        const struct    ::timespec rqt = { 3, 0 };
+
+        nanosleep (&rqt, nullptr);
         std::cout << "Printing from MyFoot (" << id_
                   << "). count is " << count_
                   << ". time is " << time(nullptr) << std::endl;
@@ -71,7 +75,7 @@ int main(int, char *[])  {
 
         timer.arm ();
 
-        const struct ::timespec rqt2 = {30, 0};
+        const struct    ::timespec rqt2 = { 30, 0 };
 
         nanosleep (&rqt2, nullptr);
         timer.set_time_interval (1);
@@ -79,31 +83,33 @@ int main(int, char *[])  {
         timer.set_time_interval (10);
         nanosleep (&rqt, nullptr);
 
-        // Repeat recursively.
-        //
+        try  {
+            timer.arm();
+            std::cout << "We must get an exception here" << std::endl;
+            return (-1);
+        }
+        catch (const std::runtime_error &) { ; }
+
         MyFoot              foot_master2 (200);
-        TimerAlarm<MyFoot>  timer2 (foot_master2,
-                                    5,
-                                    0,
-                                    TimerAlarm<MyFoot>::FOREVER_REPEATING,
-                                    true);
+        TimerAlarm<MyFoot>  timer2 (foot_master2, 5);
 
         timer2.arm ();
 
         nanosleep (&rqt, nullptr);
+        timer2.disarm();
+        assert(timer2.is_armed() == false);
     }
 
     std::cout << std::endl << std::endl
               << "main(): Got out of the enclosing block ..."
               << std::endl << std::endl;
 
-    // Go off only once.
+    // Go off only 5 times.
     //
     MyFoot             foot_master (3000);
-    TimerAlarm<MyFoot> timer (foot_master, 5, 0, 5);
+    TimerAlarm<MyFoot> timer3 (foot_master, 5, 0, 5);
 
-    timer.arm ();
-
+    timer3.arm ();
     nanosleep (&rqt, nullptr);
 
     return (EXIT_SUCCESS);

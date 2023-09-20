@@ -18,7 +18,8 @@ HEADERS = $(LOCAL_INCLUDE_DIR)/TimerAlarm/TimerAlarm.h \
 LIB_NAME =
 TARGET_LIB =
 
-TARGETS += $(LOCAL_BIN_DIR)/timer_tester
+TARGETS += $(LOCAL_BIN_DIR)/timer_tester \
+           $(LOCAL_BIN_DIR)/lru_lfu_caches
 
 # -----------------------------------------------------------------------------
 
@@ -70,16 +71,20 @@ TIMER_TESTER_OBJ = $(LOCAL_OBJ_DIR)/timer_tester.o
 $(LOCAL_BIN_DIR)/timer_tester: $(TARGET_LIB) $(TIMER_TESTER_OBJ)
 	$(CXX) -o $@ $(TIMER_TESTER_OBJ) $(LIBS)
 
+LRU_LFU_CACHES_OBJ = $(LOCAL_OBJ_DIR)/lru_lfu_caches.o
+$(LOCAL_BIN_DIR)/lru_lfu_caches: $(TARGET_LIB) $(LRU_LFU_CACHES_OBJ)
+	$(CXX) -o $@ $(LRU_LFU_CACHES_OBJ) $(LIBS)
+
 # -----------------------------------------------------------------------------
 
 depend:
 	makedepend $(CXXFLAGS) -Y $(SRCS)
 
 clean:
-	rm -f $(LIB_OBJS) $(TARGETS) $(TIMER_TESTER_OBJ)
+	rm -f $(LIB_OBJS) $(TARGETS) $(TIMER_TESTER_OBJ) $(LRU_LFU_CACHES_OBJ)
 
 clobber:
-	rm -f $(LIB_OBJS) $(TARGETS) $(TIMER_TESTER_OBJ)
+	rm -f $(LIB_OBJS) $(TARGETS) $(TIMER_TESTER_OBJ) $(LRU_LFU_CACHES_OBJ)
 
 install_lib:
 	cp -pf $(TARGET_LIB) $(PROJECT_LIB_DIR)/.

@@ -12,8 +12,8 @@ PROJECT_INCLUDE_DIR = ../../include
 
 SRCS = ../test/thrpool_tester.cc
 
-HEADERS = $(LOCAL_INCLUDE_DIR)/TimerAlarm/TimerAlarm.h \
-          $(LOCAL_INCLUDE_DIR)/TimerAlarm/TimerAlarm.tcc
+HEADERS = $(LOCAL_INCLUDE_DIR)/Cheetah/TimerAlarm.h \
+          $(LOCAL_INCLUDE_DIR)/Cheetah/TimerAlarm.tcc
 
 LIB_NAME =
 TARGET_LIB =
@@ -63,7 +63,7 @@ PRE_BUILD:
 	mkdir -p $(LOCAL_BIN_DIR)
 	mkdir -p $(LOCAL_OBJ_DIR)
 	mkdir -p $(PROJECT_LIB_DIR)
-	mkdir -p $(PROJECT_INCLUDE_DIR)/TimerAlarm
+	mkdir -p $(PROJECT_INCLUDE_DIR)/Cheetah
 
 $(TARGET_LIB):
 

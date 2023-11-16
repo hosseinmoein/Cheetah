@@ -95,13 +95,13 @@ public:
         const MutexGuard    guard (lock_ptr_.get());
         auto                iter = map_.find(k);
 
-        if (iter != map_.end())  {
+        if (iter != map_.end())  {  // Data already exists
             data_.splice(data_.begin(), data_, iter->second);
             // Update the value. It might be different.
             //
             iter->second->second = v;
         }
-        else  {
+        else  {  // New data
             data_.push_front(std::make_pair(k, v));
             map_.insert(std::make_pair(k, data_.begin()));
             clean_();
@@ -162,10 +162,7 @@ private:
     inline void clean_() noexcept  {
 
         if (map_.size() > cache_size_)  {
-            auto    iter = data_.end();
-
-            --iter;
-            map_.erase(iter->first);
+            map_.erase(data_.back().first);
             data_.pop_back();
         }
     }
